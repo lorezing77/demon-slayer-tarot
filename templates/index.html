@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塔羅牌-命運占卜</title>
+    <style>
+        /* 🎨 核心色系定義 (CSS 變數) - 預設為暗紫調背景圖 */
+        :root {
+            --bg-image: url('/static/images/紫色系背景.jpg');
+            --accent-color: #dfb2f4;
+            --text-glow: rgba(223, 178, 244, 0.5);
+            --panel-bg: rgba(15, 12, 26, 0.85); 
+            --panel-border: rgba(142, 68, 173, 0.4);
+            --btn-gradient: linear-gradient(135deg, #8e44ad, #d76d77);
+            --btn-glow: rgba(142, 68, 173, 0.4);
+            --card-front-bg: linear-gradient(135deg, #2a163a, #130b1c);
+        }
+
+        body {
+            background-image: var(--bg-image);
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: #ffffff;
+            font-family: 'Helvetica Neue', Arial, 'Microsoft YaHei', sans-serif;
+            text-align: center;
+            padding: 40px 20px;
+            margin: 0;
+            min-height: 100vh;
+            transition: background-image 1s ease;
+        }
+
+        /* 🔮 心情顏色選擇遮罩層 🔮 */
+        #mood-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #08080f;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        #mood-overlay.fade-out {
+            opacity: 0;
+            transform: scale(1.02);
+            pointer-events: none;
+        }
+
+        .mood-title { color: #bfa15f; font-size: 2em; margin-bottom: 10px; text-shadow: 0 0 10px rgba(191, 161, 95, 0.3); }
+        .mood-subtitle { color: #8c7ae6; font-size: 1em; margin-bottom: 40px; }
+        .mood-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 500px; width: 100%; padding: 0 20px; box-sizing: border-box; }
+        .mood-btn { border: 2px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 25px 15px; font-size: 1.1em; font-weight: bold; color: white; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); text-shadow: 0 2px 4px rgba(0,0,0,0.6); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+        .mood-btn:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
+        .mood-purple { background: linear-gradient(135deg, #3a1c71, #d76d77, #ffaf7b); }
+        .mood-blue   { background: linear-gradient(135deg, #00c6ff, #0072ff); }
+        .mood-red    { background: linear-gradient(135deg, #f857a6, #ff5858); }
+        .mood-green  { background: linear-gradient(135deg, #11998e, #38ef7d); }
+
+        h1 { color: var(--accent-color); font-size: 2.5em; letter-spacing: 3px; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9), 0 0 15px var(--text-glow); margin-bottom: 5px; margin-top: 20px; }
+        .subtitle { color: #eee; font-size: 1.05em; margin-bottom: 35px; text-shadow: 0 2px 6px rgba(0,0,0,1); font-weight: bold; }
+
+        .selection-panel { max-width: 900px; margin: 0 auto 40px auto; }
+        .top-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px; }
+        .bottom-row { width: 100%; }
+        
+        .opt-btn { background: var(--panel-bg); border: 2px solid var(--panel-border); border-radius: 12px; padding: 18px 10px; cursor: pointer; text-decoration: none; color: white; display: block; transition: all 0.3s ease; box-shadow: 0 6px 15px rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .opt-btn:hover { border-color: var(--accent-color); transform: translateY(-3px); box-shadow: 0 8px 22px var(--btn-glow); background: rgba(25, 20, 40, 0.9); }
+        .opt-btn .title { font-size: 1.1em; font-weight: bold; color: var(--accent-color); margin-bottom: 5px; }
+        .opt-btn .desc { font-size: 0.85em; color: #eee; }
+        .large-panel { border: 2px dashed var(--accent-color); background: rgba(15, 10, 25, 0.85); }
+
+        /* 膠囊黑霧保護盒 */
+        .result-title-box { max-width: 800px; margin: 40px auto 20px auto; background: rgba(0, 0, 0, 0.65); border: 1px solid var(--panel-border); border-radius: 50px; padding: 15px 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: inline-block; }
+        .deck-title { color: var(--accent-color); font-size: 1.5em; text-shadow: 0 2px 4px rgba(0,0,0,1), 0 0 10px var(--text-glow); font-weight: bold; }
+        .tip-text { color: #fff; font-size: 0.95em; margin: 10px 0 0 0; text-shadow: 0 2px 4px rgba(0,0,0,1); font-weight: bold; }
+
+        /* 大牌網格 */
+        .card-container { display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; margin-top: 30px; max-width: 1400px; margin-left: auto; margin-right: auto; }
+        .card-column { display: flex; flex-direction: column; align-items: center; width: 210px; margin-bottom: 25px; }
+        .card-pos { font-weight: bold; color: var(--accent-color); margin-bottom: 12px; font-size: 1em; background: rgba(0, 0, 0, 0.65); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--panel-border); box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+
+        /* 大牌舞台 */
+        .tarot-card-stage { background-color: transparent; width: 200px; height: 310px; perspective: 1000px; cursor: pointer; margin-bottom: 15px; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; box-shadow: 0 8px 25px rgba(0,0,0,0.7); border-radius: 12px; }
+        .tarot-card-stage.flipped .card-inner { transform: rotateY(180deg); }
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 12px; border: 2px solid var(--accent-color); overflow: hidden; box-sizing: border-box; }
+        .card-back { background: #141423; display: flex; align-items: center; justify-content: center; }
+        .card-back img { width: 100%; height: 100%; object-fit: cover; }
+        .card-front { transform: rotateY(180deg); background: var(--card-front-bg); display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+        .tarot-img { width: 100%; height: 100%; object-fit: contain; }
+        .card-front.is-reversed .tarot-img { transform: rotate(180deg); }
+
+        /* 大牌文字 */
+        .card-info { opacity: 0; transform: translateY(10px); transition: all 0.5s ease 0.4s; text-align: center; width: 100%; }
+        .tarot-card-stage.flipped + .card-info { opacity: 1; transform: translateY(0); }
+        .card-name { font-size: 0.95em; font-weight: bold; margin: 8px 0; text-shadow: 0 2px 5px rgba(0,0,0,0.9); }
+        .status { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 0.75em; margin-bottom: 8px; font-weight: bold; }
+        .upright { background-color: #27ae60; color: white; }
+        .downright { background-color: #c0392b; color: white; }
+        .meaning { font-size: 0.8em; color: #d1d1e0; line-height: 1.4; background: rgba(0, 0, 0, 0.6); padding: 10px; border-radius: 8px; text-align: left; margin: 0; border-left: 3px solid var(--accent-color); box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+
+        /* 直列長條延伸面板 */
+        .extend-panel { max-width: 900px; margin: 40px auto 0 auto; background: rgba(10, 8, 20, 0.88); border: 1px solid #bfa15f; border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); backdrop-filter: blur(8px); }
+        .extend-panel h3 { margin-top: 0; color: #bfa15f; text-shadow: 0 2px 4px rgba(0,0,0,0.5); margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .extend-buttons { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 20px; }
+        .ext-btn { background: linear-gradient(135deg, #1b1635, #291a3a); border: 1px solid var(--accent-color); color: #fff; padding: 14px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; font-size: 0.98em; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: left; display: flex; align-items: center; justify-content: space-between; }
+        .ext-btn:hover { border-color: #bfa15f; background: #261640; transform: translateX(4px); box-shadow: 0 6px 15px var(--btn-glow); }
+        .ext-btn::after { content: '➔'; font-size: 0.9em; color: #bfa15f; }
+        
+        /* 抽牌小長方形大師對話框 */
+        #query-result-box { display: none; background: rgba(5, 4, 10, 0.92); border: 1px solid #bfa15f; padding: 20px; border-radius: 12px; margin-top: 20px; text-align: left; animation: fadeIn 0.6s ease; box-shadow: 0 8px 25px rgba(0,0,0,0.8); backdrop-filter: blur(10px); }
+        .result-flex-wrapper { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; margin-top: 15px; }
+        
+        .minor-card-mini-stage { width: 100px; height: 155px; background: #141423; border: 2px solid var(--accent-color); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; flex-shrink: 0; }
+        .minor-card-mini-stage img { width: 100%; height: 100%; object-fit: contain; }
+        .minor-card-mini-stage.is-reversed img { transform: rotate(180deg); }
+
+        .result-text-area { flex: 1; min-width: 250px; }
+        #query-result-title { color: #bfa15f; font-weight: bold; font-size: 1.2em; text-shadow: 0 1px 3px rgba(0,0,0,0.5); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 5px; }
+        #query-result-text { line-height: 1.6; color: #eee; font-size: 0.98em; }
+
+        .expert-advice { max-width: 900px; margin: 40px auto 0 auto; background: rgba(0, 0, 0, 0.65); border: 1px solid var(--accent-color); border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); text-align: left; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .expert-advice h2 { margin-top: 0; color: var(--accent-color); font-size: 1.4em; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .expert-advice p { font-size: 0.95em; color: #e1e1f0; line-height: 1.6; }
+        .advice-tag { color: var(--accent-color); font-weight: bold; }
+
+        /* 右上角切換點 */
+        .color-switcher { position: absolute; top: 20px; right: 20px; display: flex; gap: 8px; z-index: 1000; }
+        .dot-btn { width: 20px; height: 20px; border-radius: 50%; border: 1px solid white; cursor: pointer; }
+    </style>
+</head>
+<body data-has-result="{% if result %}true{% else %}false{% endif %}">
+
+    <!-- 心情顏色選擇遮罩層 -->
+    <div id="mood-overlay">
+        <div class="mood-title">🔮 命運能量檢測 🔮</div>
+        <div class="mood-subtitle">開始占卜前，請深呼吸，選擇一個最符合您當前心情的顏色：</div>
+        <div class="mood-options">
+            <button class="mood-btn mood-purple" onclick="setMoodColor('purple')">神祕夢幻紫<br><span style="font-size:0.7em;font-weight:normal;opacity:0.8;">渴望指引、直覺敏銳</span></button>
+            <button class="mood-btn mood-blue" onclick="setMoodColor('blue')">冷靜深邃藍<br><span style="font-size:0.7em;font-weight:normal;opacity:0.8;">理智思考、尋求平靜</span></button>
+            <button class="mood-btn mood-red" onclick="setMoodColor('red')">熱情星火紅<br><span style="font-size:0.7em;font-weight:normal;opacity:0.8;">積極衝刺、面臨挑戰</span></button>
+            <button class="mood-btn mood-green" onclick="setMoodColor('green')">治癒大地綠<br><span style="font-size:0.7em;font-weight:normal;opacity:0.8;">釋放壓力、修復心靈</span></button>
+        </div>
+    </div>
+
+    <!-- 右上角小圓點 -->
+    <div class="color-switcher">
+        <div class="dot-btn mood-purple" title="神祕紫" onclick="setMoodColor('purple', true)"></div>
+        <div class="dot-btn mood-blue" title="深邃藍" onclick="setMoodColor('blue', true)"></div>
+        <div class="dot-btn mood-red" title="星火紅" onclick="setMoodColor('red', true)"></div>
+        <div class="dot-btn mood-green" title="大地綠" onclick="setMoodColor('green', true)"></div>
+    </div>
+
+    <h1>🔮 塔羅牌-命運占卜 🔮</h1>
+    <div class="subtitle">請在心中默念您的祈願與問題，並選擇下方最適合您的大阿爾克那牌陣：</div>
+    
+    <div class="selection-panel">
+        <div class="top-row">
+            <a href="/divine?mode=mode1" class="opt-btn">
+                <div class="title">每日運氣</div>
+                <div class="desc">🔮 大牌核心隨機抽一<br>定調今日靈魂能量趨勢</div>
+            </a>
+            <a href="/divine?mode=mode2" class="opt-btn">
+                <div class="title">選擇題評估</div>
+                <div class="desc">⚖️ 抽取兩張大牌<br>對齊抉擇兩端命運利弊</div>
+            </a>
+            <a href="/divine?mode=mode3" class="opt-btn">
+                <div class="title">聖三角占卜</div>
+                <div class="desc">⏳ 抽取三張大牌<br>洞悉過去現在未來時序</div>
+            </a>
+        </div>
+        <div class="bottom-row">
+            <a href="/divine?mode=mode4" class="opt-btn large-panel">
+                <div class="title">🪐 命運之輪·凱爾特十字大牌陣 🪐</div>
+                <div class="desc">✨ 22張大牌終極推演！深層剖析十字核心障礙、隱蔽因果與靈魂終局。適合重大命運抉擇。</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 占卜結果渲染區 -->
+    {% if result %}
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 40px 0;">
+        
+        <div class="result-title-box">
+            <div class="deck-title">✨ 您抽取的是：{{ title }} ✨</div>
+            <p class="tip-text">🔮 請依序點擊下方卡牌進行翻牌，揭示大阿爾克那的靈魂羈絆 🔮</p>
+        </div>
+        
+        <div class="card-container">
+            {% for card in result %}
+                <div class="card-column">
+                    <div class="card-pos">{{ card.position }}</div>
+                    <div class="tarot-card-stage" onclick="flipCard(this)">
+                        <div class="card-inner">
+                            <div class="card-back"><img src="/static/images/卡背.jpg" alt="藤花卡背"></div>
+                            <div class="card-front {% if card.orientation == '逆位' %}is-reversed{% endif %}">
+                                <!-- 🌟 修正點：移除先前多打的 '+' 符號，徹底通暢 JS 核心大腦 -->
+                                <img src="/static/images/{{ card.img }}" onerror="this.onerror=function(){this.src='/static/images/'+'{{ card.img }}'.replace('.jpg', '.png'); this.onerror=function(){this.src='/static/images/卡背.jpg';}}; this.src='/static/images/'+'{{ card.img }}';" class="tarot-img" alt="{{ card.name }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-name">{{ card.name }}</div>
+                        <div><span class="status {% if card.orientation == '正位' %}upright{% else %}downright{% endif %}">{{ card.orientation }}</span></div>
+                        <p class="meaning"><strong>大牌象徵：</strong>{{ card.meaning }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- 🔮 四種延伸詢問控制面板 🔮 -->
+        <div class="extend-panel">
+            <h3>⚔️ 延伸詢問 選擇一個選項抽牌</h3>
+            <div class="extend-buttons">
+                <button class="ext-btn" onclick="sendExtendQuery('q1')">💡 盲點解密：我目前忽略了哪些現實細節？</button>
+                <button class="ext-btn" onclick="sendExtendQuery('q2')">⚡ 關鍵轉折：現實局勢何時會產生好轉？</button>
+                <button class="ext-btn" onclick="sendExtendQuery('q3')">🔥 核心建議：當前具體最應該採取的現實行動？</button>
+                <button class="ext-btn" onclick="sendExtendQuery('q4')">🛡️ 命運防線：如何透過現實調整來化解不佳結果？</button>
+            </div>
+            
+            <div id="query-result-box">
+                <div id="query-result-title"></div>
+                <div class="result-flex-wrapper">
+                    <div id="minor-card-container" class="minor-card-mini-stage">
+                        <img id="minor-card-img" src="/static/images/卡背.jpg" alt="小牌結果">
+                    </div>
+                    <div class="result-text-area">
+                        <div id="query-result-text"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="expert-advice">
+            <h2>📜 命運大師的權威解牌指引</h2>
+            <p><span class="advice-tag">【高維占卜思維】</span> 
+                {% if mode == 'mode1' %}
+                    <strong>大牌單牌流：</strong>大阿爾克那定調了你靈魂當前的宏觀考驗。正位為原型能量流暢，逆位代表潛意識阻塞，需結合下方小牌行動指南找出破局關鍵。
+                {% elif mode == 'mode2' %}
+                    <strong>二元對立牌陣：</strong>大牌聚焦於宏觀立場與內在信念的拉扯，配合小牌能精確指出兩條路線在物質或人際層面的實質代價。
+                {% elif mode == 'mode3' %}
+                    <strong>線性時空牌陣：</strong>大牌織就過去、現在、未來的宏大宿命藍圖。若未來牌面受挫，依靠下方延伸小牌的具體行動修正，能最大程度扭轉因果。
+                {% elif mode == 'mode4' %}
+                    <strong>正統凱爾特十字：</strong>22張大牌在此牌陣展現出極強的業力共鳴。1、2牌的小十字定調核心阻礙，3、5牌建立潛意識軸線。下方的現實延伸分析將能為你解鎖命運之柱的隱藏盲區。
+                {% endif %}
+            </p>
+            <p><span class="advice-tag">【修煉建議】</span> 宏觀大牌掌握命運方向，現實小牌決定破局細節。這套系統完美對齊了『知命而後改命』的最高神秘學宗旨。保持全神貫注的呼吸，用理智和意志破開眼前的現實幻象。</p>
+        </div>
+    {% endif %}
+
+    <script>
+        function sendExtendQuery(queryType) {
+            fetch('/extend_query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: queryType })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const resBox = document.getElementById('query-result-box');
+                const resTitle = document.getElementById('query-result-title');
+                const resText = document.getElementById('query-result-text');
+                const minorCardContainer = document.getElementById('minor-card-container');
+                const minorCardImg = document.getElementById('minor-card-img');
+                
+                resTitle.innerHTML = data.title;
+                resText.innerHTML = data.reply;
+                
+                minorCardImg.src = "/static/images/" + data.minor_img;
+                minorCardImg.onerror = function() {
+                    this.src = "/static/images/卡背.jpg"; 
+                };
+                
+                if (data.reply.includes('逆位】')) {
+                    minorCardContainer.classList.add('is-reversed');
+                } else {
+                    minorCardContainer.classList.remove('is-reversed');
+                }
+                
+                resBox.style.display = 'block';
+                
+                minorCardContainer.style.animation = 'none';
+                minorCardContainer.offsetHeight; 
+                minorCardContainer.style.animation = 'fadeIn 0.6s ease';
+
+                resBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        }
+
+        function setMoodColor(color, isManual = false) {
+            const root = document.documentElement;
+            localStorage.setItem('selected_mood', color);
+            if (color === 'purple') {
+                root.style.setProperty('--bg-image', "url('/static/images/紫色系背景.jpg')");
+                root.style.setProperty('--accent-color', '#dfb2f4');
+                root.style.setProperty('--text-glow', 'rgba(223, 178, 244, 0.5)');
+                root.style.setProperty('--panel-bg', 'rgba(25, 17, 42, 0.82)');
+                root.style.setProperty('--panel-border', 'rgba(142, 68, 173, 0.5)');
+                root.style.setProperty('--btn-gradient', 'linear-gradient(135deg, #8e44ad, #d76d77)');
+                root.style.setProperty('--btn-glow', 'rgba(142, 68, 173, 0.4)');
+                root.style.setProperty('--card-front-bg', 'linear-gradient(135deg, #2a163a, #130b1c)');
+            } else if (color === 'blue') {
+                root.style.setProperty('--bg-image', "url('/static/images/藍色系背景.jpg')");
+                root.style.setProperty('--accent-color', '#4fc3f7');
+                root.style.setProperty('--text-glow', 'rgba(79, 195, 247, 0.5)');
+                root.style.setProperty('--panel-bg', 'rgba(12, 22, 38, 0.82)');
+                root.style.setProperty('--panel-border', 'rgba(29, 62, 102, 0.6)');
+                root.style.setProperty('--btn-gradient', 'linear-gradient(135deg, #0052d4, #4364f7)');
+                root.style.setProperty('--btn-glow', 'rgba(67, 100, 247, 0.4)');
+                root.style.setProperty('--card-front-bg', 'linear-gradient(135deg, #0e2340, #061120)');
+            } else if (color === 'red') {
+                root.style.setProperty('--bg-image', "url('/static/images/紅色系背景.jpg')");
+                root.style.setProperty('--accent-color', '#ff6b6b');
+                root.style.setProperty('--text-glow', 'rgba(255, 107, 107, 0.5)');
+                root.style.setProperty('--panel-bg', 'rgba(31, 10, 10, 0.85)');
+                root.style.setProperty('--panel-border', 'rgba(92, 29, 29, 0.6)');
+                root.style.setProperty('--btn-gradient', 'linear-gradient(135deg, #e52d27, #b31217)');
+                root.style.setProperty('--btn-glow', 'rgba(229, 45, 39, 0.4)');
+                root.style.setProperty('--card-front-bg', 'linear-gradient(135deg, #3d1212, #1a0707)');
+            } else if (color === 'green') {
+                root.style.setProperty('--bg-image', "url('/static/images/綠色系背景.jpg')");
+                root.style.setProperty('--accent-color', '#81c784');
+                root.style.setProperty('--text-glow', 'rgba(129, 199, 132, 0.5)');
+                root.style.setProperty('--panel-bg', 'rgba(8, 23, 18, 0.82)');
+                root.style.setProperty('--panel-border', 'rgba(28, 76, 54, 0.6)');
+                root.style.setProperty('--btn-gradient', 'linear-gradient(135deg, #11998e, #38ef7d)');
+                root.style.setProperty('--btn-glow', 'rgba(56, 239, 125, 0.4)');
+                root.style.setProperty('--card-front-bg', 'linear-gradient(135deg, #0d2c20, #06140e)');
+            }
+            
+            const overlay = document.getElementById('mood-overlay');
+            if (overlay && !isManual) {
+                overlay.classList.add('fade-out');
+                setTimeout(() => { overlay.style.display = 'none'; }, 600);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedMood = localStorage.getItem('selected_mood');
+            const overlay = document.getElementById('mood-overlay');
+            const hasResult = document.body.getAttribute('data-has-result') === 'true';
+            if (savedMood) setMoodColor(savedMood, true);
+            else setMoodColor('purple', true);
+            if (overlay) {
+                if (hasResult) overlay.style.display = 'none';
+                else { overlay.classList.remove('fade-out'); overlay.style.display = 'flex'; }
+            }
+        });
+
+        function flipCard(cardStage) { cardStage.classList.toggle('flipped'); }
+    </script>
+</body>
+</html>
